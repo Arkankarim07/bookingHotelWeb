@@ -4,7 +4,7 @@ import InputWithLabel from './InputWithLabel';
 
 const PickDateView: React.FC = () => {
     return (
-        <div className='flex justify-center items-center  p-6 backdrop-blur-md bg-black/30 rounded-xl shadow-lg max-w-4xl my-10'>
+        <div className='flex justify-end items-center  md:absolute md:bottom-20  p-6 bg-white rounded-xl shadow-xl max-w-4xl'>
             <div className='grid grid-cols-1 md:grid-cols-5 gap-6 w-full'> {/* Menggunakan grid untuk layout responsif */}
                 <InputWithLabel
                     id="email-input"
