@@ -1,18 +1,12 @@
 import React from 'react';
-import { MdOutlineDateRange, MdEmail, MdPeople } from "react-icons/md";
+import { MdOutlineDateRange, MdPeople } from "react-icons/md";
 import InputWithLabel from './InputWithLabel';
 
 const PickDateView: React.FC = () => {
     return (
         <div className='flex justify-end items-center  md:absolute md:bottom-20  p-6 bg-white rounded-xl shadow-xl max-w-4xl'>
-            <div className='grid grid-cols-1 md:grid-cols-5 gap-6 w-full'> {/* Menggunakan grid untuk layout responsif */}
-                <InputWithLabel
-                    id="email-input"
-                    label="Email"
-                    type="email"
-                    icon={MdEmail} // Menggunakan ikon email
-                    placeholder="Masukkan email Anda"
-                />
+            <div className='grid grid-cols-1 md:grid-cols-4 gap-6 w-full'> {/* Menggunakan grid untuk layout responsif */}
+
                 <InputWithLabel
                     id="check-in-date"
                     label="Check-in"
@@ -43,7 +37,7 @@ const PickDateView: React.FC = () => {
             shadow-md hover:shadow-lg 
             transition duration-300 ease-in-out
             w-full md:w-auto md:min-w-[100px] {/* Sesuaikan lebar minimum */}
-            col-span-1 md:col-start-5 md:self-center
+            col-span-1 md:col-start-4 md:self-center
           '
                 >
                     Cari

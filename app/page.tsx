@@ -10,6 +10,7 @@ import MarqueeView from "@/components/MarqueeView";
 import GalleryGridView from "@/components/GalleryGridView";
 import FooterView from "@/components/FooterView";
 import ContactUsView from "@/components/ContactUsView";
+import { RiCustomerService2Fill } from "react-icons/ri";
 
 export default function Home() {
   return (
@@ -18,6 +19,11 @@ export default function Home() {
       {/* Hero Section */}
       <HeroSection />
 
+      <div className="z-50 fixed bottom-1.5 right-1.5">
+        <div className="w-[50px] h-[50px] flex  items-center justify-center bg-purple-600 rounded-full">
+          <RiCustomerService2Fill className="text-3xl  text-white " />
+        </div>
+      </div>
       {/* About Section */}
       <AboutSection />
 
@@ -101,7 +107,7 @@ export default function Home() {
         </div>
 
         {/* Enhanced Contact Us Section */}
-       <ContactUsView />
+        <ContactUsView />
       </div>
 
       <FooterView />

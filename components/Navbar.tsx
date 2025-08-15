@@ -138,17 +138,17 @@ const Navbar = () => {
                 <h1 className='text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-transparent bg-clip-text'>VacationFun</h1>
 
                 {/* Desktop Menu */}
-                <div className='hidden md:flex gap-6 font-bold'>
-                    <Link href='/' className='text-gray-700 hover:text-blue-500 transition-colors duration-200 relative after:content-[""] after:block after:w-0 after:h-[2px] after:bg-blue-500 after:rounded-full after:transition-all after:duration-300 hover:after:w-full'>
+                <div className={`hidden md:flex gap-6 font-bold ${pathname === '/' ? navBg ? 'text-black' : 'text-white' : 'text-black'}  `}>
+                    <Link href='/' className=' hover:text-blue-500 transition-colors duration-200 relative after:content-[""] after:block after:w-0 after:h-[2px] after:bg-blue-500 after:rounded-full after:transition-all after:duration-300 hover:after:w-full'>
                         Home
                     </Link>
-                    <Link href='/hotels' className='text-gray-700 hover:text-blue-500 transition-colors duration-200 relative after:content-[""] after:block after:w-0 after:h-[2px] after:bg-blue-500 after:rounded-full after:transition-all after:duration-300 hover:after:w-full'>
+                    <Link href='/hotels' className=' hover:text-blue-500 transition-colors duration-200 relative after:content-[""] after:block after:w-0 after:h-[2px] after:bg-blue-500 after:rounded-full after:transition-all after:duration-300 hover:after:w-full'>
                         Hotels
                     </Link>
-                    <Link href='/packages' className='text-gray-700 hover:text-blue-500 transition-colors duration-200 relative after:content-[""] after:block after:w-0 after:h-[2px] after:bg-blue-500 after:rounded-full after:transition-all after:duration-300 hover:after:w-full'>
+                    <Link href='/packages' className=' hover:text-blue-500 transition-colors duration-200 relative after:content-[""] after:block after:w-0 after:h-[2px] after:bg-blue-500 after:rounded-full after:transition-all after:duration-300 hover:after:w-full'>
                         Packages
                     </Link>
-                    <Link href='/contact' className='text-gray-700 hover:text-blue-500 transition-colors duration-200 relative after:content-[""] after:block after:w-0 after:h-[2px] after:bg-blue-500 after:rounded-full after:transition-all after:duration-300 hover:after:w-full'>
+                    <Link href='/contact' className=' hover:text-blue-500 transition-colors duration-200 relative after:content-[""] after:block after:w-0 after:h-[2px] after:bg-blue-500 after:rounded-full after:transition-all after:duration-300 hover:after:w-full'>
                         Contact
                     </Link>
                 </div>
