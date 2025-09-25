@@ -1,72 +1,97 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client'
 import Navbar from '@/components/Navbar'
 import Image from 'next/image'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Search, Filter, SlidersHorizontal, MapPin, Users, Bed, Wifi, Car, Coffee, Waves, Star, Heart } from 'lucide-react'
+import axios from 'axios'
+import { useQuery } from '@tanstack/react-query'
+import { useSearchParams } from 'next/navigation'
 
 const Page = () => {
-    const rooms = [
-        { 
-            img: "/assets/img/background.jpg", 
-            price: 120, 
-            originalPrice: 150,
-            name: "King Room", 
-            beds: "1 King Bed", 
-            capacity: "2 Guests",
-            rating: 4.8,
-            reviews: 124,
-            facilities: ['wifi', 'breakfast', 'parking'],
-            discount: 20,
-            isPopular: true
-        },
-        { 
-            img: "/assets/img/background.jpg", 
-            price: 95, 
-            originalPrice: null,
-            name: "Queen Room", 
-            beds: "1 Queen Bed", 
-            capacity: "2 Guests",
-            rating: 4.6,
-            reviews: 89,
-            facilities: ['wifi', 'gym'],
-            discount: null,
-            isPopular: false
-        },
-        { 
-            img: "/assets/img/background.jpg", 
-            price: 150, 
-            originalPrice: 180,
-            name: "Family Suite", 
-            beds: "2 Queen Beds", 
-            capacity: "4 Guests",
-            rating: 4.9,
-            reviews: 156,
-            facilities: ['wifi', 'breakfast', 'pool', 'parking'],
-            discount: 17,
-            isPopular: true
-        },
-        { 
-            img: "/assets/img/background.jpg", 
-            price: 80, 
-            originalPrice: null,
-            name: "Single Room", 
-            beds: "1 Single Bed", 
-            capacity: "1 Guest",
-            rating: 4.4,
-            reviews: 67,
-            facilities: ['wifi'],
-            discount: null,
-            isPopular: false
-        },
-    ];
+    const searchParams = useSearchParams();
 
+    // Ambil query param dari URL
+    const checkIn = searchParams.get("checkIn") || "";
+    const checkOut = searchParams.get("checkOut") || "";
+    const guest = searchParams.get("guest") || "";
+
+    const [filters, setFilters] = useState({
+        name: '',
+        guest,
+        checkIn,
+        checkOut,
+        cheapest: false,
+        expensive: false,
+        facility: [] as string[], // contoh: ["WiFi", "AC"]
+    })
+    const [debouncedName, setDebouncedName] = useState(filters.name);
+    // debounce name 500ms
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedName(filters.name);
+        }, 1000);
+
+        return () => {
+            clearTimeout(handler); // bersihin timer tiap kali user ngetik lagi
+        };
+    }, [filters.name]);
+
+    const fetchFacilities = async () => {
+        const res = await axios.get('http://localhost:8080/facility')
+        return res.data.data // asumsi bentuknya [{ID:1, Name:"WiFi"}, ...]
+    }
+    const toggleFacility = (name: string) => {
+        setFilters((prev) => ({
+            ...prev,
+            facility: prev.facility.includes(name)
+                ? prev.facility.filter((f) => f !== name)
+                : [...prev.facility, name],
+        }))
+    }
+
+    const fetchData = async () => {
+        const params = new URLSearchParams()
+        if (filters.name) params.append('name', debouncedName)
+        if (filters.guest) params.append('guest', filters.guest)
+        if (filters.cheapest) params.append('cheapest', 'true')
+        if (filters.expensive) params.append('expensive', 'true')
+        if (filters.facility.length > 0) params.append('facility', filters.facility.join(','))
+
+        const response = await axios.get(`http://localhost:8080/search?${params.toString()}`)
+        return response.data.data
+    }
+
+
+    const { data: room, error, isLoading, refetch } = useQuery({
+        queryKey: ['rooms', debouncedName, filters.guest, filters.checkIn, filters.checkOut, filters.cheapest, filters.expensive, filters.facility],
+        queryFn: fetchData,
+        // enabled: false
+    })
+    const { data: facilities, isLoading: fLoading } = useQuery({
+        queryKey: ['facilities'],
+        queryFn: fetchFacilities,
+    })
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        refetch()
+    }
     const facilityIcons = {
         wifi: Wifi,
         breakfast: Coffee,
         pool: Waves,
         parking: Car,
-        gym: Users
+        gym: Users,
+        ac: Bed,
     };
 
+    if (isLoading) {
+        return <div>Loading...</div>
+    }
+    if (error) {
+        return <div>Error: {error.message}</div>
+    }
     return (
         <>
             <Navbar />
@@ -93,48 +118,61 @@ const Page = () => {
                                     <Search size={20} className='text-gray-600' />
                                     <h3 className='text-lg font-bold text-gray-900'>Pencarian</h3>
                                 </div>
-                                <div className='space-y-4'>
+                                <form
+                                    onSubmit={handleSubmit}
+                                    className='space-y-4'>
                                     {/* Location Search */}
                                     <div>
-                                        <label className='block text-sm font-medium text-gray-700 mb-2'>Lokasi</label>
+                                        <label className='block text-sm font-medium text-gray-700 mb-2'>Nama Room</label>
                                         <div className='relative'>
                                             <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400' size={16} />
-                                            <input 
-                                                type="text" 
-                                                placeholder="Cari hotel atau lokasi..."
+                                            <input
+                                                type="text"
+                                                value={filters.name}
+                                                onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+                                                placeholder="Cari hotel"
                                                 className='w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors'
                                             />
                                         </div>
                                     </div>
-                                    
+
                                     {/* Date Inputs */}
                                     <div className='grid grid-cols-1 gap-3'>
                                         <div>
                                             <label className='block text-sm font-medium text-gray-700 mb-2'>Check-in</label>
-                                            <input type="date" className='w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none' />
+                                            <input type="date"
+                                                value={filters.checkIn}
+                                                onChange={(e) => setFilters({ ...filters, checkIn: e.target.value })}
+                                                className='w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none' />
                                         </div>
                                         <div>
                                             <label className='block text-sm font-medium text-gray-700 mb-2'>Check-out</label>
-                                            <input type="date" className='w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none' />
+                                            <input type="date"
+                                                value={filters.checkOut}
+                                                onChange={(e) => setFilters({ ...filters, checkOut: e.target.value })}
+                                                className='w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none' />
                                         </div>
                                     </div>
-                                    
+
                                     {/* Guests */}
                                     <div>
                                         <label className='block text-sm font-medium text-gray-700 mb-2'>Jumlah Tamu</label>
-                                        <select className='w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none'>
+                                        <select
+                                            value={filters.guest}
+                                            onChange={(e) => setFilters({ ...filters, guest: e.target.value })}
+                                            className='w-full px-3 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none'>
                                             <option>1 Tamu</option>
                                             <option>2 Tamu</option>
                                             <option>3 Tamu</option>
                                             <option>4+ Tamu</option>
                                         </select>
                                     </div>
-                                    
+
                                     {/* Search Button */}
-                                    <button className='w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:opacity-90 transition-opacity'>
+                                    <button type='submit' className='w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:opacity-90 transition-opacity'>
                                         Cari Hotel
                                     </button>
-                                </div>
+                                </form>
                             </div>
 
                             {/* Sort */}
@@ -143,11 +181,21 @@ const Page = () => {
                                     <SlidersHorizontal size={20} className='text-gray-600' />
                                     <h3 className='text-lg font-bold text-gray-900'>Urutkan</h3>
                                 </div>
-                                <select className='w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none'>
+                                <select
+                                    onChange={(e) => {
+                                        if (e.target.value === "price_asc") {
+                                            setFilters({ ...filters, cheapest: true, expensive: false })
+                                        } else if (e.target.value === "price_desc") {
+                                            setFilters({ ...filters, cheapest: false, expensive: true })
+                                        } else {
+                                            setFilters({ ...filters, cheapest: false, expensive: false })
+                                        }
+                                    }}
+                                    className='w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none'>
                                     <option value="recommended">Direkomendasikan</option>
                                     <option value="price_asc">Harga: Termurah</option>
                                     <option value="price_desc">Harga: Termahal</option>
-                                    <option value="rating">Rating Tertinggi</option>
+                                    {/* <option value="rating">Rating Tertinggi</option> */}
                                 </select>
                             </div>
 
@@ -158,20 +206,23 @@ const Page = () => {
                                     <h3 className='text-lg font-bold text-gray-900'>Fasilitas</h3>
                                 </div>
                                 <div className='space-y-3'>
-                                    {[
-                                        { label: 'Wi-Fi Gratis', icon: Wifi, count: 18 },
-                                        { label: 'Sarapan', icon: Coffee, count: 12 },
-                                        { label: 'Kolam Renang', icon: Waves, count: 8 },
-                                        { label: 'Parkir Gratis', icon: Car, count: 15 },
-                                        { label: 'Gym/Fitness', icon: Users, count: 6 },
-                                    ].map((facility, index) => (
-                                        <label key={index} className='flex items-center gap-3 cursor-pointer group'>
-                                            <input type="checkbox" className='w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500' />
-                                            <facility.icon size={16} className='text-gray-600 group-hover:text-blue-600 transition-colors' />
-                                            <span className='flex-1 text-gray-700 group-hover:text-gray-900 transition-colors'>{facility.label}</span>
-                                            <span className='text-sm text-gray-500'>({facility.count})</span>
-                                        </label>
-                                    ))}
+                                    {fLoading ? (
+                                        <p>Loading fasilitas...</p>
+                                    ) : (
+                                        facilities?.map((facility: any) => (
+                                            <label key={facility.ID} className="flex items-center gap-3 cursor-pointer group">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={filters.facility.includes(facility.name)}
+                                                    onChange={() => toggleFacility(facility.name)}
+                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="flex-1 text-gray-700 group-hover:text-gray-900 transition-colors">
+                                                    {facility.name}
+                                                </span>
+                                            </label>
+                                        ))
+                                    )}
                                 </div>
                             </div>
 
@@ -186,7 +237,7 @@ const Page = () => {
                                                 {[...Array(rating)].map((_, i) => (
                                                     <Star key={i} size={14} fill='currentColor' className='text-yellow-400' />
                                                 ))}
-                                                {[...Array(5-rating)].map((_, i) => (
+                                                {[...Array(5 - rating)].map((_, i) => (
                                                     <Star key={i} size={14} className='text-gray-300' />
                                                 ))}
                                             </div>
@@ -200,20 +251,24 @@ const Page = () => {
                         {/* Results Grid */}
                         <div className='lg:col-span-3'>
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                {rooms.map((room, index) => (
+                                {room?.map((room: any, index: any) => (
                                     <div key={index} className="bg-white rounded-2xl shadow-sm border hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer">
                                         {/* Image */}
                                         <div className="relative h-48 overflow-hidden">
                                             <Image
-                                                src={room.img}
-                                                alt={room.name}
+                                                src={
+                                                    room.room_images?.[0]?.image_url
+                                                        ? `http://localhost:8080/${room.room_images[0].image_url}`
+                                                        : "/assets/img/background.jpg"
+                                                }
+                                                alt="Room"
                                                 width={400}
                                                 height={300}
                                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                             />
-                                            
+
                                             {/* Badges */}
-                                            <div className="absolute top-3 left-3 flex gap-2">
+                                            {/* <div className="absolute top-3 left-3 flex gap-2">
                                                 {room.isPopular && (
                                                     <span className="px-2 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">
                                                         POPULER
@@ -224,7 +279,7 @@ const Page = () => {
                                                         -{room.discount}%
                                                     </span>
                                                 )}
-                                            </div>
+                                            </div> */}
 
                                             {/* Heart Icon */}
                                             <button className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
@@ -252,23 +307,24 @@ const Page = () => {
                                             <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                                                 <div className="flex items-center gap-1">
                                                     <Bed size={14} />
-                                                    <span>{room.beds}</span>
+                                                    <span>{room.name}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     <Users size={14} />
-                                                    <span>{room.capacity}</span>
+                                                    <span>{room.max_guest}</span>
                                                 </div>
                                             </div>
 
                                             {/* Facilities */}
                                             <div className="flex items-center gap-2 mb-4">
-                                                {room.facilities.slice(0, 3).map((facility, idx) => {
-                                                    const Icon = facilityIcons[facility];
-                                                    return (
+                                                {room.facilities?.slice(0, 3).map((facility: any, idx: number) => {
+                                                    const key = facility.Name?.toLowerCase(); // "WiFi" -> "wifi"
+                                                    const Icon = facilityIcons[key];
+                                                    return Icon ? (
                                                         <div key={idx} className="p-1.5 bg-gray-100 rounded-lg">
                                                             <Icon size={12} className="text-gray-600" />
                                                         </div>
-                                                    );
+                                                    ) : null;
                                                 })}
                                                 {room.facilities.length > 3 && (
                                                     <span className="text-xs text-gray-500 ml-1">
@@ -278,18 +334,18 @@ const Page = () => {
                                             </div>
 
                                             {/* Reviews */}
-                                            <p className="text-xs text-gray-500 mb-3">
+                                            {/* <p className="text-xs text-gray-500 mb-3">
                                                 {room.reviews} ulasan
-                                            </p>
+                                            </p> */}
 
                                             {/* Price */}
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
-                                                    {room.originalPrice && (
+                                                    {/* {room.originalPrice && (
                                                         <span className="text-sm text-gray-400 line-through">
                                                             ${room.originalPrice}
                                                         </span>
-                                                    )}
+                                                    )} */}
                                                     <span className="text-xl font-bold text-blue-600">
                                                         ${room.price}
                                                     </span>

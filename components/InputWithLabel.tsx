@@ -9,9 +9,11 @@ interface InputWithLabelProps {
     icon: IconType; // Prop untuk menerima komponen ikon
     placeholder?: string; // Opsional placeholder
     style?: string
+    value?: string
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const InputWithLabel: React.FC<InputWithLabelProps> = ({ id, label, type, icon: Icon, placeholder, style }) => {
+const InputWithLabel: React.FC<InputWithLabelProps> = ({ id, label, type, icon: Icon, placeholder, style, value, onChange }) => {
     return (
         <label htmlFor={id} className={`block ${style || ''}`}>
             <div className="flex items-center gap-2 text-gray-700">
@@ -22,6 +24,8 @@ const InputWithLabel: React.FC<InputWithLabelProps> = ({ id, label, type, icon: 
                 type={type}
                 id={id}
                 placeholder={placeholder}
+                value={value}
+                onChange={onChange}
                 className="mt-1 w-full rounded-lg bg-white border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2"
             />
         </label>

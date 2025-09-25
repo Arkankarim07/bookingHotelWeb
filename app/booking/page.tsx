@@ -1,16 +1,19 @@
+'use client'
 import React from 'react'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-
+import { useRouter } from 'next/navigation'
 const Page = () => {
+
+  const router = useRouter()
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
       <div className="sticky top-0 z-10 shadow-lg bg-white/90 backdrop-blur-md border-b border-gray-200 w-full p-4">
-        <Link href={"/room/ab"} className="flex items-center space-x-3">
+        <button onClick={() => router.back()} className="flex items-center space-x-3">
           <ArrowLeft className="text-2xl text-gray-700 hover:text-blue-600 cursor-pointer transition-colors" />
           <h1 className="text-xl font-semibold text-gray-800">Hotel Booking</h1>
-        </Link>
+        </button>
       </div>
 
       {/* Main Content */}
