@@ -2,9 +2,59 @@
 import React from 'react'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import axios from 'axios'
 const Page = () => {
+  const searchParams = useSearchParams()
+  const roomId = searchParams.get("room")
+  
+  const handlePay = async () => {
+    try {
+      const userObject = localStorage.getItem('user')
+      const userData = userObject ? JSON.parse(userObject) : null
+      console.log("User ID:", userData)
+      const payload = {
+        room_id: Number(roomId), // ambil dari params
+        user_id: userData.ID, // sementara dummy, nanti bisa dari auth/login
+        check_in: new Date().toISOString(), // dummy
+        check_out: new Date(Date.now() + 86400000).toISOString(), // +1 hari
+        quantity: 1,
+        full_name: userData.name,
+        email: userData.email,
+        phone: "08123456789",
+        adults: 2,
+        children: 0,
+        room_count: 1,
+        room_type: "Deluxe"
+      }
 
+      const res = await axios.post("http://localhost:8080/create-snap", payload, {
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      const data = res.data
+      console.log("Snap Response:", data)
+
+      const snapToken = data.data.token // ✅ token ada di sini
+      window.snap.pay(snapToken, {
+        onSuccess: (result: any) => {
+          console.log("SUCCESS:", result)
+        },
+        onPending: (result: any) => {
+          console.log("PENDING:", result)
+        },
+        onError: (result: any) => {
+          console.error("ERROR:", result)
+        },
+        onClose: () => {
+          alert("Kamu menutup popup tanpa bayar.")
+        }
+      })
+    } catch (err) {
+      console.error("Gagal ambil token:", err)
+    }
+  }
   const router = useRouter()
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -35,17 +85,17 @@ const Page = () => {
                 </div>
                 Informasi Personal
               </h2>
-              
+
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
                     Nama Lengkap <span className="text-red-500">*</span>
                   </label>
-                  <input 
-                    type="text" 
-                    id="fullName" 
-                    name="fullName" 
-                    required 
+                  <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                     placeholder="Masukkan nama lengkap Anda"
                   />
@@ -55,11 +105,11 @@ const Page = () => {
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                     Email <span className="text-red-500">*</span>
                   </label>
-                  <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    required 
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                     placeholder="contoh@email.com"
                   />
@@ -69,11 +119,11 @@ const Page = () => {
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
                     Nomor Telepon / WhatsApp <span className="text-red-500">*</span>
                   </label>
-                  <input 
-                    type="tel" 
-                    id="phone" 
-                    name="phone" 
-                    required 
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                     placeholder="+62 812-3456-7890"
                   />
@@ -95,11 +145,11 @@ const Page = () => {
                   <label htmlFor="checkin" className="block text-sm font-medium text-gray-700 mb-2">
                     Tanggal Check-in <span className="text-red-500">*</span>
                   </label>
-                  <input 
-                    type="date" 
-                    id="checkin" 
-                    name="checkin" 
-                    required 
+                  <input
+                    type="date"
+                    id="checkin"
+                    name="checkin"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   />
                 </div>
@@ -108,11 +158,11 @@ const Page = () => {
                   <label htmlFor="checkout" className="block text-sm font-medium text-gray-700 mb-2">
                     Tanggal Check-out <span className="text-red-500">*</span>
                   </label>
-                  <input 
-                    type="date" 
-                    id="checkout" 
-                    name="checkout" 
-                    required 
+                  <input
+                    type="date"
+                    id="checkout"
+                    name="checkout"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   />
                 </div>
@@ -121,10 +171,10 @@ const Page = () => {
                   <label htmlFor="roomType" className="block text-sm font-medium text-gray-700 mb-2">
                     Jenis Kamar <span className="text-red-500">*</span>
                   </label>
-                  <select 
-                    id="roomType" 
-                    name="roomType" 
-                    required 
+                  <select
+                    id="roomType"
+                    name="roomType"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   >
                     <option value="">-- Pilih Jenis Kamar --</option>
@@ -139,13 +189,13 @@ const Page = () => {
                   <label htmlFor="adults" className="block text-sm font-medium text-gray-700 mb-2">
                     Jumlah Dewasa <span className="text-red-500">*</span>
                   </label>
-                  <input 
-                    type="number" 
-                    id="adults" 
-                    name="adults" 
-                    min="1" 
-                    defaultValue="1" 
-                    required 
+                  <input
+                    type="number"
+                    id="adults"
+                    name="adults"
+                    min="1"
+                    defaultValue="1"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   />
                 </div>
@@ -154,12 +204,12 @@ const Page = () => {
                   <label htmlFor="children" className="block text-sm font-medium text-gray-700 mb-2">
                     Jumlah Anak-anak
                   </label>
-                  <input 
-                    type="number" 
-                    id="children" 
-                    name="children" 
-                    min="0" 
-                    defaultValue="0" 
+                  <input
+                    type="number"
+                    id="children"
+                    name="children"
+                    min="0"
+                    defaultValue="0"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   />
                 </div>
@@ -168,13 +218,13 @@ const Page = () => {
                   <label htmlFor="roomCount" className="block text-sm font-medium text-gray-700 mb-2">
                     Jumlah Kamar <span className="text-red-500">*</span>
                   </label>
-                  <input 
-                    type="number" 
-                    id="roomCount" 
-                    name="roomCount" 
-                    min="1" 
-                    defaultValue="1" 
-                    required 
+                  <input
+                    type="number"
+                    id="roomCount"
+                    name="roomCount"
+                    min="1"
+                    defaultValue="1"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   />
                 </div>
@@ -194,9 +244,9 @@ const Page = () => {
                 <label htmlFor="specialRequest" className="block text-sm font-medium text-gray-700 mb-2">
                   Catatan Tambahan
                 </label>
-                <textarea 
-                  id="specialRequest" 
-                  name="specialRequest" 
+                <textarea
+                  id="specialRequest"
+                  name="specialRequest"
                   rows="4"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm resize-none"
                   placeholder="Permintaan khusus, kebutuhan aksesibilitas, preferensi kamar, dll."
@@ -218,10 +268,10 @@ const Page = () => {
                   <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700 mb-2">
                     Pilih Metode <span className="text-red-500">*</span>
                   </label>
-                  <select 
-                    id="paymentMethod" 
-                    name="paymentMethod" 
-                    required 
+                  <select
+                    id="paymentMethod"
+                    name="paymentMethod"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   >
                     <option value="">-- Pilih Metode Pembayaran --</option>
@@ -236,10 +286,10 @@ const Page = () => {
                   <label htmlFor="kupon" className="block text-sm font-medium text-gray-700 mb-2">
                     Kode Kupon (Jika ada)
                   </label>
-                  <input 
-                    type="text" 
-                    id="kupon" 
-                    name="kupon" 
+                  <input
+                    type="text"
+                    id="kupon"
+                    name="kupon"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                     placeholder="Masukkan kode kupon"
                   />
@@ -250,10 +300,10 @@ const Page = () => {
                     Upload Bukti Pembayaran (Jika Transfer Bank)
                   </label>
                   <div className="relative">
-                    <input 
-                      type="file" 
-                      id="paymentProof" 
-                      name="paymentProof" 
+                    <input
+                      type="file"
+                      id="paymentProof"
+                      name="paymentProof"
                       accept="image/*,.pdf"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
                     />
@@ -266,11 +316,11 @@ const Page = () => {
             {/* Terms and Submit */}
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <div className="flex items-start space-x-3 mb-6">
-                <input 
-                  type="checkbox" 
-                  id="terms" 
-                  name="terms" 
-                  required 
+                <input
+                  type="checkbox"
+                  id="terms"
+                  name="terms"
+                  required
                   className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="terms" className="text-sm text-gray-600 leading-relaxed">

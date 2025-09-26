@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ReactQueryProvider from "./utils/ReactQueryProvider";
 import Script from "next/script";
+import { AuthProvider } from "@/context/AuthContext";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -29,12 +30,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Script src="https://app.sandbox.midtrans.com/snap/snap.js"
-        data-client-key={clientKey}
-        />
-        <ReactQueryProvider>
-        {children}
-        </ReactQueryProvider>
+        <AuthProvider>
+
+          <Script src="https://app.sandbox.midtrans.com/snap/snap.js"
+            data-client-key={clientKey}
+          />
+          <ReactQueryProvider>
+            {children}
+          </ReactQueryProvider>
+        </AuthProvider>
       </body>
     </html>
   );

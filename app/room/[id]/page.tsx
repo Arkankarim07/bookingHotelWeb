@@ -3,6 +3,7 @@
 import Navbar from '@/components/Navbar'
 import RatingSection from '@/components/room/RatingSection'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import { Check } from 'lucide-react'
@@ -14,9 +15,19 @@ import { BsPeople } from 'react-icons/bs'
 import { FaStar } from 'react-icons/fa'
 
 const Page = () => {
+  const { user, openLogin } = useAuth()
+  // const isLoggedIn = !!localStorage.getItem("token")
   const [isOpen, setIsOpen] = useState(false)
   const { id } = useParams()
 
+
+  const handleBooking = () => {
+    if (user) {
+      setIsOpen(true)
+    } else {
+      openLogin()
+    }
+  }
   const fetchRoomByID = async () => {
     const response = await axios.get(`http://localhost:8080/room/get/${id}`)
     // console.log(response.data)
@@ -35,53 +46,7 @@ const Page = () => {
   if (error) {
     return <div>Error: {error.message}</div>
   }
-  const handlePay = async () => {
-    try {
-const userObject = localStorage.getItem('user')
-const userId = userObject ? JSON.parse(userObject).ID : null
-console.log("User ID:", userId)
-      const payload = {
-        room_id: Number(id), // ambil dari params
-        user_id: userId, // sementara dummy, nanti bisa dari auth/login
-        check_in: new Date().toISOString(), // dummy
-        check_out: new Date(Date.now() + 86400000).toISOString(), // +1 hari
-        quantity: 1,
-        full_name: "John Doe",
-        email: "johndoe@example.com",
-        phone: "08123456789",
-        adults: 2,
-        children: 0,
-        room_count: 1,
-        room_type: "Deluxe"
-      }
 
-      const res = await axios.post("http://localhost:8080/create-snap", payload, {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-      const data = res.data
-      console.log("Snap Response:", data)
-
-      const snapToken = data.data.token // ✅ token ada di sini
-      window.snap.pay(snapToken, {
-        onSuccess: (result: any) => {
-          console.log("SUCCESS:", result)
-        },
-        onPending: (result: any) => {
-          console.log("PENDING:", result)
-        },
-        onError: (result: any) => {
-          console.error("ERROR:", result)
-        },
-        onClose: () => {
-          alert("Kamu menutup popup tanpa bayar.")
-        }
-      })
-    } catch (err) {
-      console.error("Gagal ambil token:", err)
-    }
-  }
   return (
     <>
       <Navbar />
@@ -142,18 +107,27 @@ console.log("User ID:", userId)
                 ))}
               </div>
             </div>
-            <Button
+            {/* <Button
               onClick={handlePay}
               className="mt-6 w-full p-4 md:p-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 font-extrabold text-lg md:text-2xl"
             >
               Pesan Sekarang
-            </Button>
+            </Button> */}
 
-            {/* <Link href='/booking'>
-              <Button className='mt-6 w-full p-4 md:p-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 font-extrabold text-lg md:text-2xl'>
+            {user ? (
+              <Link href={`/booking?room=${id}`}>
+                <Button className='mt-6 w-full p-4 md:p-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 font-extrabold text-lg md:text-2xl'>
+                  Pesan Sekarang
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                onClick={handleBooking}
+                className='mt-6 w-full p-4 md:p-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 font-extrabold text-lg md:text-2xl'
+              >
                 Pesan Sekarang
               </Button>
-            </Link> */}
+            )}
           </div>
         </div>
       </div>

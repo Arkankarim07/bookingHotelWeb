@@ -12,19 +12,14 @@ import {
 } from '@/components/ui/accordion'
 import { LogOut, User } from 'lucide-react'
 import axios from 'axios'
+import { useAuth } from '@/context/AuthContext'
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
-    const [isModalLogin, setIsModalLogin] = useState(false)
-    const [isModalRegister, setIsModalRegister] = useState(false)
+    const { user, setUser, openLogin, openRegister } = useAuth()
     const [navBg, setNavBg] = useState(false);
     const [isMounted, setIsMounted] = useState(false)
-    const [user, setUser] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const storedUser = localStorage.getItem("user")
-            return storedUser ? JSON.parse(storedUser) : null
-        }
-    })
+
     const pathname = usePathname()
 
     const toggleMenu = () => {
@@ -39,15 +34,6 @@ const Navbar = () => {
         }
     }, [])
 
-    const toggleLogin = () => {
-        setIsModalLogin(!isModalLogin)
-        setIsModalRegister(false)
-    }
-
-    const toggleRegister = () => {
-        setIsModalRegister(!isModalRegister)
-        setIsModalLogin(false)
-    }
 
     const changeNavBg = () => {
         if (window.scrollY >= 200) {
@@ -56,22 +42,6 @@ const Navbar = () => {
             setNavBg(false);
         }
     }
-
-    const switchToRegister = () => {
-        setIsModalLogin(false)
-        setIsModalRegister(true)
-    }
-
-    const switchToLogin = () => {
-        setIsModalRegister(false)
-        setIsModalLogin(true)
-    }
-
-    const closeAllModals = () => {
-        setIsModalLogin(false)
-        setIsModalRegister(false)
-    }
-
     const handleLogout = async () => {
         try {
             await axios.post('http://localhost:8080/logout', {}, { withCredentials: true })
@@ -127,23 +97,6 @@ const Navbar = () => {
                 : 'bg-white shadow-md'
             }
         `}>
-
-            {/* Login Modal */}
-            <ModalLogin
-                isOpen={isModalLogin}
-                onClose={closeAllModals}
-                onSwitchToRegister={switchToRegister}
-                onLoginSuccess={(user) => setUser(user)}
-            />
-
-            {/* Register Modal */}
-            <ModalRegister
-                isOpen={isModalRegister}
-                onClose={closeAllModals}
-                onSwitchToLogin={switchToLogin}
-                onLoginSuccess={(user) => setUser(user)}
-            />
-
             <div className='flex justify-between items-center py-4 px-6 md:px-20'>
                 {/* Logo */}
                 <h1 className='text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-transparent bg-clip-text'>
@@ -207,7 +160,7 @@ const Navbar = () => {
                         </div>
                     ) : (
                         <button
-                            onClick={toggleLogin}
+                            onClick={openLogin}
                             className='bg-black text-white px-6 py-2 rounded-full hover:bg-gray-800 transition-colors duration-200'
                         >
                             Login
@@ -285,7 +238,7 @@ const Navbar = () => {
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => {
-                                        toggleRegister()
+                                        openRegister()
                                         setIsMenuOpen(false)
                                     }}
                                     className='flex-1 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition-colors duration-200'
@@ -294,7 +247,7 @@ const Navbar = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        toggleLogin()
+                                        openLogin()
                                         setIsMenuOpen(false)
                                     }}
                                     className='flex-1 bg-black text-white py-2 rounded-full hover:bg-gray-800 transition-colors duration-200'
