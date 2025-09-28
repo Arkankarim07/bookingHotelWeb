@@ -1,61 +1,110 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import axios from 'axios'
+import { useQuery } from '@tanstack/react-query'
 const Page = () => {
   const searchParams = useSearchParams()
   const roomId = searchParams.get("room")
-  
+
+  const fetchPriceRoom = async () => {
+    const response = await axios.get(`http://localhost:8080/room/get/${roomId}`)
+    return response.data.data.price
+  }
+
+  const { data: price, error, isLoading } = useQuery({
+    queryKey: ['room'],
+    queryFn: fetchPriceRoom
+  })
+
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    checkin: '',
+    checkout: '',
+    adults: '',
+    children: '',
+    quantity: '',
+    specialRequest: '',
+  })
+
+  const [totalPrice, setTotalPrice] = useState(0)
+  useEffect(() => {
+    const numericQuantity = Math.max(1, parseInt(formData.quantity, 10) || 0);
+    if (price) {
+      setTotalPrice(numericQuantity * price);
+    }
+  }, [formData.quantity, price]);
+
   const handlePay = async () => {
     try {
-      const userObject = localStorage.getItem('user')
-      const userData = userObject ? JSON.parse(userObject) : null
-      console.log("User ID:", userData)
-      const payload = {
-        room_id: Number(roomId), // ambil dari params
-        user_id: userData.ID, // sementara dummy, nanti bisa dari auth/login
-        check_in: new Date().toISOString(), // dummy
-        check_out: new Date(Date.now() + 86400000).toISOString(), // +1 hari
-        quantity: 1,
-        full_name: userData.name,
-        email: userData.email,
-        phone: "08123456789",
-        adults: 2,
-        children: 0,
-        room_count: 1,
-        room_type: "Deluxe"
+      const userData = JSON.parse(localStorage.getItem("user") || "{}");
+
+      if (!userData?.ID) {
+        alert("Silakan login terlebih dahulu sebelum booking.");
+        return;
       }
 
-      const res = await axios.post("http://localhost:8080/create-snap", payload, {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      })
-      const data = res.data
-      console.log("Snap Response:", data)
+      const payload = {
+        room_id: Number(roomId),
+        user_id: userData.ID,
+        check_in: formData.checkin,
+        check_out: formData.checkout,
+        quantity: Number(formData.quantity),
+        full_name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        adults: Number(formData.adults),
+        children: Number(formData.children),
+        room_count: Number(formData.quantity), // bisa diganti kalau punya field khusus
+        special_request: formData.specialRequest,
+      };
 
-      const snapToken = data.data.token // ✅ token ada di sini
-      window.snap.pay(snapToken, {
-        onSuccess: (result: any) => {
-          console.log("SUCCESS:", result)
-        },
-        onPending: (result: any) => {
-          console.log("PENDING:", result)
-        },
-        onError: (result: any) => {
-          console.error("ERROR:", result)
-        },
-        onClose: () => {
-          alert("Kamu menutup popup tanpa bayar.")
-        }
-      })
-    } catch (err) {
-      console.error("Gagal ambil token:", err)
+      const res = await axios.post(
+        "http://localhost:8080/create-snap",
+        payload
+      );
+
+      if (res.data?.data?.token) {
+        window.snap.pay(res.data.data.token, {
+          onSuccess: (result: any) => {
+            console.log("✅ Success:", result);
+            alert("Pembayaran berhasil!");
+          },
+          onPending: (result: any) => {
+            console.log("⌛ Pending:", result);
+            alert("Menunggu pembayaran...");
+          },
+          onError: (result: any) => {
+            console.error("❌ Error:", result);
+            alert("Terjadi kesalahan pembayaran.");
+          },
+          onClose: () => {
+            alert("Kamu menutup popup pembayaran sebelum selesai.");
+          },
+        });
+      } else {
+        console.error("⚠️ Snap token tidak ditemukan:", res.data);
+        alert("Gagal mendapatkan token pembayaran.");
+      }
+    } catch (error) {
+      console.error("❌ Booking error:", error);
+      alert("Terjadi kesalahan saat membuat booking.");
     }
-  }
+  };
+
   const router = useRouter()
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
@@ -68,7 +117,13 @@ const Page = () => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            handlePay()
+          }}
+
+          className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Form Header */}
           <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 p-6">
             <h1 className="text-2xl font-bold text-white mb-2">Complete Your Booking</h1>
@@ -96,6 +151,8 @@ const Page = () => {
                     id="fullName"
                     name="fullName"
                     required
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                     placeholder="Masukkan nama lengkap Anda"
                   />
@@ -110,6 +167,8 @@ const Page = () => {
                     id="email"
                     name="email"
                     required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                     placeholder="contoh@email.com"
                   />
@@ -123,6 +182,8 @@ const Page = () => {
                     type="tel"
                     id="phone"
                     name="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                     placeholder="+62 812-3456-7890"
@@ -149,6 +210,8 @@ const Page = () => {
                     type="date"
                     id="checkin"
                     name="checkin"
+                    value={formData.checkin}
+                    onChange={(e) => setFormData({ ...formData, checkin: e.target.value })}
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   />
@@ -162,28 +225,14 @@ const Page = () => {
                     type="date"
                     id="checkout"
                     name="checkout"
+                    value={formData.checkout}
+                    onChange={(e) => setFormData({ ...formData, checkout: e.target.value })}
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="roomType" className="block text-sm font-medium text-gray-700 mb-2">
-                    Jenis Kamar <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    id="roomType"
-                    name="roomType"
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
-                  >
-                    <option value="">-- Pilih Jenis Kamar --</option>
-                    <option value="single">Single Room</option>
-                    <option value="double">Double Room</option>
-                    <option value="suite">Suite Room</option>
-                    <option value="family">Family Room</option>
-                  </select>
-                </div>
+
 
                 <div>
                   <label htmlFor="adults" className="block text-sm font-medium text-gray-700 mb-2">
@@ -194,7 +243,9 @@ const Page = () => {
                     id="adults"
                     name="adults"
                     min="1"
-                    defaultValue="1"
+                    // defaultValue="1" 
+                    value={formData.adults}
+                    onChange={(e) => setFormData({ ...formData, adults: e.target.value })}
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   />
@@ -207,9 +258,11 @@ const Page = () => {
                   <input
                     type="number"
                     id="children"
+                    value={formData.children}
+                    onChange={(e) => setFormData({ ...formData, children: e.target.value })}
                     name="children"
                     min="0"
-                    defaultValue="0"
+                    // defaultValue="0"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   />
                 </div>
@@ -223,11 +276,17 @@ const Page = () => {
                     id="roomCount"
                     name="roomCount"
                     min="1"
-                    defaultValue="1"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                    // defaultValue="1"
                     required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm"
                   />
                 </div>
+              </div>
+              <div className="mt-6 font-semibold">
+                <h1>Total Harga</h1>
+                <h1 className="ml-auto font-bold text-red-500 text-3xl">{totalPrice.toLocaleString("id-ID", { style: "currency", currency: "IDR" })}</h1>
               </div>
             </div>
 
@@ -247,6 +306,8 @@ const Page = () => {
                 <textarea
                   id="specialRequest"
                   name="specialRequest"
+                  value={formData.specialRequest}
+                  onChange={(e) => setFormData({ ...formData, specialRequest: e.target.value })}
                   rows="4"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 bg-white hover:shadow-sm resize-none"
                   placeholder="Permintaan khusus, kebutuhan aksesibilitas, preferensi kamar, dll."
@@ -255,7 +316,7 @@ const Page = () => {
             </div>
 
             {/* Payment Method */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100">
+            {/* <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-100">
               <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
                 <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">
                   <span className="text-white text-sm font-bold">4</span>
@@ -311,7 +372,7 @@ const Page = () => {
                   <p className="text-xs text-gray-500 mt-1">Format: JPG, PNG, PDF (Max 5MB)</p>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Terms and Submit */}
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
@@ -336,12 +397,12 @@ const Page = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <button
+                {/* <button
                   type="button"
                   className="flex-1 px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
                 >
                   Batal
-                </button>
+                </button> */}
                 <button
                   type="submit"
                   className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white rounded-lg font-bold hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 transform hover:scale-[1.02] transition-all duration-200 shadow-lg hover:shadow-xl"
@@ -351,7 +412,7 @@ const Page = () => {
               </div>
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   )
